@@ -41,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.diagnow.DiagNowApplication
+import com.example.diagnow.core.database.repository.LocalDataRepository
 import com.example.diagnow.core.network.RetrofitHelper
 import com.example.diagnow.core.session.SessionManager
 import com.example.diagnow.home.data.model.MedicationDetailResponse
@@ -56,14 +58,19 @@ fun PrescriptionDetailScreen(
 ) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
+    val retrofitHelper = remember { RetrofitHelper(sessionManager) }
+    val database = remember { (context.applicationContext as DiagNowApplication).database }
+    val prescriptionDao = remember { database.prescriptionDao() }
+    val medicationDao = remember { database.medicationDao() }
+    val localRepository = remember { LocalDataRepository(prescriptionDao, medicationDao) }
+
     val viewModel = remember {
         PrescriptionDetailViewModel(
             GetPrescriptionMedicationsUseCase(
-                PrescriptionRepository(
-                    RetrofitHelper(sessionManager),
-                    sessionManager
-                )
-            )
+                remoteRepository = PrescriptionRepository(retrofitHelper, sessionManager),
+                localRepository = localRepository
+            ),
+            localRepository = localRepository
         )
     }
 

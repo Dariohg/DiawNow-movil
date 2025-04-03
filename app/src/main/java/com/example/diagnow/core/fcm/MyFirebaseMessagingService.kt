@@ -1,15 +1,25 @@
-// --- CREA ESTE NUEVO ARCHIVO en diagnow/core/fcm/MyFirebaseMessagingService.kt ---
-package com.example.diagnow.core.fcm // Asegúrate que el paquete sea este
+package com.example.diagnow.core.fcm
 
 import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.media.RingtoneManager
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.example.diagnow.DiagNowApplication // Importa tu clase Application
-import com.example.diagnow.R // Necesitarás un icono en res/drawable
-import com.example.diagnow.core.fcm.data.DeviceTokenRepository // Importa el Repo
-import com.example.diagnow.core.fcm.domain.RegisterDeviceTokenUseCase // Importa el UseCase
+import com.example.diagnow.DiagNowApplication
+import com.example.diagnow.MainActivity
+import com.example.diagnow.R
+import com.example.diagnow.core.database.repository.LocalDataRepository
+import com.example.diagnow.core.fcm.data.DeviceTokenRepository
+import com.example.diagnow.core.fcm.domain.RegisterDeviceTokenUseCase
 import com.example.diagnow.core.network.RetrofitHelper
 import com.example.diagnow.core.session.SessionManager
+import com.example.diagnow.home.data.repository.PrescriptionRepository
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
@@ -17,107 +27,168 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-class MyFirebaseMessagingService : FirebaseMessagingService() { // <-- HEREDA de FirebaseMessagingService
+class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     private val TAG = "MyFirebaseMsgService"
 
-    /**
-     * Se llama cuando Firebase genera un nuevo token FCM o actualiza uno existente.
-     * Este es un punto CRÍTICO para enviar el token a tu backend.
-     */
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.d(TAG, "Nuevo token FCM generado: ${token.take(10)}...")
-        // Intentar enviar el token al servidor inmediatamente
         sendRegistrationToServer(token)
     }
 
-    /**
-     * Se llama cuando se recibe un mensaje mientras la app está en primer plano,
-     * o cuando un mensaje de datos (o mixto) llega en segundo plano.
-     */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
         Log.d(TAG, "Mensaje FCM recibido desde: ${remoteMessage.from}")
 
-        // Procesar payload de datos (si existe)
         if (remoteMessage.data.isNotEmpty()) {
             Log.d(TAG, "Payload de Datos: ${remoteMessage.data}")
-            // Ejemplo: buscar tipo de notificación
+
             when (remoteMessage.data["type"]) {
                 "NEW_PRESCRIPTION" -> {
                     val prescriptionId = remoteMessage.data["prescriptionId"]
                     Log.i(TAG, "Notificación de Nueva Receta recibida, ID: $prescriptionId")
-                    // Aquí podrías decidir qué hacer con esta info (ej. guardar, notificar)
+
+                    // Guardar la receta localmente
+                    if (prescriptionId != null) {
+                        savePrescriptionLocally(prescriptionId)
+                    }
                 }
-                // Añadir otros tipos de mensajes de datos si los tienes
                 else -> Log.d(TAG, "Mensaje de datos de tipo desconocido recibido.")
             }
         }
 
-        // Procesar payload de notificación (si existe y la app está en primer plano)
         remoteMessage.notification?.let { notification ->
             Log.d(TAG, "Payload de Notificación: Title='${notification.title}', Body='${notification.body}'")
-            // Mostrar la notificación al usuario si la app está en primer plano
             sendNotification(notification.title, notification.body)
         }
     }
 
-    /**
-     * Construye y muestra una notificación simple en la bandeja del sistema.
-     * Deberías personalizar esto más (PendingIntent, etc.).
-     */
     private fun sendNotification(title: String?, messageBody: String?) {
-        // TODO: Crear un PendingIntent para abrir la app/pantalla correcta al hacer clic
-        // val intent = Intent(this, MainActivity::class.java) // Por ejemplo
-        // intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        // val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT)
+        // Intent para abrir la app al hacer clic en la notificación
+        val intent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
 
-        val channelId = DiagNowApplication.CHANNEL_ID // Usa el ID del canal creado en Application
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+        )
+
+        val channelId = DiagNowApplication.CHANNEL_ID
+        val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            // --- ¡USA TU PROPIO ICONO! ---
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // Reemplaza con un icono adecuado (blanco y transparente idealmente)
-            // -----------------------------
-            .setContentTitle(title ?: getString(R.string.app_name)) // Usa R.string.app_name si el título es null
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title ?: getString(R.string.app_name))
             .setContentText(messageBody)
-            .setAutoCancel(true) // Cierra la notificación al tocarla
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        // .setSound(defaultSoundUri) // Sonido por defecto
-        // .setContentIntent(pendingIntent) // Asigna el PendingIntent aquí
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setSound(defaultSoundUri)
+            .setContentIntent(pendingIntent)
+            .setVibrate(longArrayOf(0, 500, 200, 500)) // Patrón de vibración: 500ms ON, 200ms OFF, 500ms ON
 
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
-        // ID único para poder mostrar múltiples notificaciones
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationId = Random.nextInt()
+
+        // Hacer vibrar el dispositivo
+        vibrateDevice()
+
         notificationManager.notify(notificationId, notificationBuilder.build())
         Log.d(TAG, "Mostrando notificación ID: $notificationId")
     }
 
-    /**
-     * Intenta enviar el token FCM al backend.
-     * IMPORTANTE: Esta función se ejecuta en un Service, fuera del ciclo de vida
-     * normal de Activities/ViewModels. La gestión de dependencias aquí es más tricky
-     * sin un framework como Hilt. Hacemos instanciación manual como fallback.
-     */
+    private fun vibrateDevice() {
+        try {
+            // Obtener el servicio de vibración
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                val vibrator = vibratorManager.defaultVibrator
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    // Vibración con efecto predefinido para Android 8.0+
+                    vibrator.vibrate(VibrationEffect.createWaveform(
+                        longArrayOf(0, 500, 200, 500), -1))
+                } else {
+                    // Método tradicional para versiones anteriores
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(longArrayOf(0, 500, 200, 500), -1)
+                }
+            } else {
+                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createWaveform(
+                        longArrayOf(0, 500, 200, 500), -1))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(longArrayOf(0, 500, 200, 500), -1)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al intentar vibrar: ${e.message}")
+        }
+    }
+
+    private fun savePrescriptionLocally(prescriptionId: String) {
+        val context = applicationContext
+        val sessionManager = SessionManager(context)
+
+        if (sessionManager.isLoggedIn()) {
+            val database = (application as DiagNowApplication).database
+            val prescriptionDao = database.prescriptionDao()
+            val medicationDao = database.medicationDao()
+            val localRepository = LocalDataRepository(prescriptionDao, medicationDao)
+
+            val retrofitHelper = RetrofitHelper(sessionManager)
+            val remoteRepository = PrescriptionRepository(retrofitHelper, sessionManager)
+
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    // Obtener detalles de la receta
+                    val prescriptionResult = remoteRepository.getPrescriptionById(prescriptionId)
+
+                    if (prescriptionResult.isSuccess) {
+                        prescriptionResult.getOrNull()?.let { prescription ->
+                            // Guardar la receta localmente
+                            localRepository.savePrescription(prescription)
+
+                            // Obtener y guardar los medicamentos
+                            val medicationsResult = remoteRepository.getPrescriptionMedications(prescriptionId)
+
+                            if (medicationsResult.isSuccess) {
+                                medicationsResult.getOrNull()?.let { detailResponse ->
+                                    localRepository.saveMedications(
+                                        detailResponse.data.medications,
+                                        prescriptionId
+                                    )
+                                }
+                                Log.i(TAG, "Medicamentos guardados localmente para receta ID: $prescriptionId")
+                            }
+                        }
+                        Log.i(TAG, "Receta guardada localmente ID: $prescriptionId")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al guardar la receta localmente: ${e.message}")
+                }
+            }
+        }
+    }
+
     private fun sendRegistrationToServer(token: String?) {
         if (token == null) {
             Log.w(TAG, "Token nulo recibido en onNewToken, no se puede enviar.")
             return
         }
 
-        // Instanciación manual (NO IDEAL, pero funciona sin DI)
-        // Necesitamos el Context para SessionManager
         val context = applicationContext
         val sessionManager = SessionManager(context)
 
-        // Solo intentar enviar si el usuario está logueado
         if (sessionManager.isLoggedIn()) {
             Log.d(TAG, "Usuario logueado, intentando enviar token $token al servidor...")
             val retrofitHelper = RetrofitHelper(sessionManager)
             val repository = DeviceTokenRepository(retrofitHelper, sessionManager)
             val useCase = RegisterDeviceTokenUseCase(repository)
 
-            // Lanzar una coroutine para la operación de red
             CoroutineScope(Dispatchers.IO).launch {
                 val result = useCase(token)
                 result.fold(
@@ -126,12 +197,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() { // <-- HEREDA de
                 )
             }
         } else {
-            // Usuario no logueado. ¿Qué hacer?
-            // Opción 1: No hacer nada. El token se enviará después del login. (Implementado ahora)
-            // Opción 2: Guardar el token en SharedPreferences para enviarlo específicamente después del login.
             Log.w(TAG, "Usuario no logueado. El token $token NO se envió. Se enviará tras el próximo login.")
-            // sessionManager.setPendingDeviceToken(token) // Necesitarías añadir esta función a SessionManager
         }
     }
 }
-// --- END OF FILE diagnow/core/fcm/MyFirebaseMessagingService.kt ---

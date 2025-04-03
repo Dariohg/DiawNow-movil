@@ -5,8 +5,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import com.example.diagnow.core.database.DiagNowDatabase
 
 class DiagNowApplication : Application() {
+
+    val database: DiagNowDatabase by lazy { DiagNowDatabase.getInstance(this) }
 
     companion object {
         const val CHANNEL_ID = "diagnow_notifications"

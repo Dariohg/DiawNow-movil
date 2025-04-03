@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
 
     id("com.google.gms.google-services")
+    id("kotlin-kapt")
+
 }
 
 android {
@@ -84,6 +86,10 @@ dependencies {
     // Material Icons
     implementation("androidx.compose.material:material-icons-core:1.5.4")
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
+
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
 
     // Testing
     testImplementation(libs.junit)
