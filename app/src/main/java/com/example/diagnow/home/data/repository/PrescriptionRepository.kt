@@ -1,5 +1,6 @@
 package com.example.diagnow.home.data.repository
 
+import android.util.Log
 import com.example.diagnow.core.network.RetrofitHelper
 import com.example.diagnow.core.session.SessionManager
 import com.example.diagnow.home.data.model.PrescriptionResponse
@@ -8,21 +9,38 @@ class PrescriptionRepository(
     private val retrofitHelper: RetrofitHelper,
     private val sessionManager: SessionManager
 ) {
+
     suspend fun getUserPrescriptions(): Result<List<PrescriptionResponse>> {
         return try {
-            val token = sessionManager.getToken() ?: return Result.failure(Exception("No hay sesión activa"))
+
+            val token = sessionManager.getToken() ?: return Result.failure(Exception("No hay token de autenticación"))
             val authHeader = "Bearer $token"
 
-            val response = retrofitHelper.prescriptionService.getUserPrescriptions(authHeader)
+            val user = sessionManager.getUser() ?: return Result.failure(Exception("No hay usuario en sesión"))
+
+            Log.d("PrescriptionRepo", "Obteniendo recetas para el usuario ID: ${user.id}")
+
+            val response = retrofitHelper.prescriptionService.getPatientPrescriptions(authHeader, user.id)
+
+            Log.d("PrescriptionRepo", "Respuesta del servidor: ${response.code()}")
 
             if (response.isSuccessful) {
-                response.body()?.let { prescriptions ->
+                val responseBody = response.body()
+                if (responseBody != null) {
+                    val prescriptions = responseBody.data.prescriptions
+                    Log.d("PrescriptionRepo", "Recetas obtenidas: ${prescriptions.size}")
                     Result.success(prescriptions)
-                } ?: Result.failure(Exception("Respuesta vacía del servidor"))
+                } else {
+                    Log.e("PrescriptionRepo", "Respuesta vacía del servidor")
+                    Result.failure(Exception("Respuesta vacía del servidor"))
+                }
             } else {
-                Result.failure(Exception(response.errorBody()?.string() ?: "Error desconocido"))
+                val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                Log.e("PrescriptionRepo", "Error del servidor: ${response.code()}, $errorBody")
+                Result.failure(Exception("Error ${response.code()}: $errorBody"))
             }
         } catch (e: Exception) {
+            Log.e("PrescriptionRepo", "Excepción al obtener recetas", e)
             Result.failure(e)
         }
     }

@@ -7,26 +7,29 @@ data class PrescriptionResponse(
     @SerializedName("id")
     val id: String,
 
-    @SerializedName("userId")
-    val userId: String,
+    @SerializedName("patientId")
+    val patientId: String,
 
     @SerializedName("doctorName")
-    val doctorName: String,
+    val doctorName: String?,
 
     @SerializedName("date")
-    val date: Date,
+    val date: Date?,
 
     @SerializedName("diagnosis")
     val diagnosis: String,
 
     @SerializedName("status")
-    val status: String,
+    val status: String?,
 
     @SerializedName("medications")
-    val medications: List<MedicationResponse>,
+    val medications: List<MedicationResponse>?,
 
     @SerializedName("notes")
-    val notes: String? = null
+    val notes: String? = null,
+
+    @SerializedName("createdAt")
+    val createdAt: String? = null // Nuevo campo
 )
 
 data class MedicationResponse(

@@ -1,5 +1,6 @@
 package com.example.diagnow.home.presentation
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.diagnow.core.session.SessionManager
@@ -33,25 +34,39 @@ class HomeViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            getPrescriptionsUseCase()
-                .fold(
-                    onSuccess = { prescriptions ->
-                        _uiState.update {
-                            it.copy(
-                                prescriptions = prescriptions,
-                                isLoading = false
-                            )
+            try {
+                Log.d("HomeViewModel", "Iniciando carga de prescripciones")
+
+                getPrescriptionsUseCase()
+                    .fold(
+                        onSuccess = { prescriptions ->
+                            Log.d("HomeViewModel", "Prescripciones cargadas con éxito: ${prescriptions.size}")
+                            _uiState.update {
+                                it.copy(
+                                    prescriptions = prescriptions,
+                                    isLoading = false
+                                )
+                            }
+                        },
+                        onFailure = { error ->
+                            Log.e("HomeViewModel", "Error al cargar prescripciones", error)
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = "Error: ${error.message}"
+                                )
+                            }
                         }
-                    },
-                    onFailure = { error ->
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                error = error.message
-                            )
-                        }
-                    }
-                )
+                    )
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Excepción al cargar prescripciones", e)
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Error inesperado: ${e.message}"
+                    )
+                }
+            }
         }
     }
 

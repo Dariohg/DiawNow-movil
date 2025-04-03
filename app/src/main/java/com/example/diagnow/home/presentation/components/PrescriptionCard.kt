@@ -35,6 +35,7 @@ import com.example.diagnow.home.data.model.PrescriptionResponse
 import com.example.diagnow.ui.theme.StatusSuccess
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun PrescriptionCard(
@@ -42,7 +43,20 @@ fun PrescriptionCard(
     onClick: () -> Unit
 ) {
     val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-    val formattedDate = dateFormat.format(prescription.date)
+    val formattedDate = when {
+        prescription.date != null -> dateFormat.format(prescription.date)
+        prescription.createdAt != null -> {
+            try {
+                val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+                isoFormat.timeZone = TimeZone.getTimeZone("UTC")
+                val date = isoFormat.parse(prescription.createdAt)
+                date?.let { dateFormat.format(it) } ?: "Fecha desconocida"
+            } catch (e: Exception) {
+                prescription.createdAt.take(10)
+            }
+        }
+        else -> "Fecha desconocida"
+    }
 
     Card(
         modifier = Modifier
@@ -73,8 +87,7 @@ fun PrescriptionCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = prescription.status.replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = (prescription.status ?: "activa").replaceFirstChar { it.uppercase() },                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -89,7 +102,7 @@ fun PrescriptionCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = prescription.doctorName,
+                        text = prescription.doctorName ?: "Sin médico",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -154,8 +167,7 @@ fun PrescriptionCard(
                     shape = MaterialTheme.shapes.small
                 ) {
                     Text(
-                        text = "${prescription.medications.size} medicamento${if (prescription.medications.size > 1) "s" else ""}",
-                        style = MaterialTheme.typography.bodySmall,
+                        "${prescription.medications?.size ?: 0} medicamento${if ((prescription.medications?.size ?: 0) > 1) "s" else ""}",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )

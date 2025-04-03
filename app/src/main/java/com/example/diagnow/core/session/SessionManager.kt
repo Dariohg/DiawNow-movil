@@ -56,4 +56,6 @@ class SessionManager(context: Context) {
     fun isLoggedIn(): Boolean {
         return getToken() != null
     }
+
+
 }
