@@ -6,7 +6,7 @@ data class RegisterRequest(
     @SerializedName("name")
     val name: String,
 
-    @SerializedName("lastName")
+    @SerializedName("last_name")
     val lastName: String,
 
     @SerializedName("email")
@@ -22,8 +22,5 @@ data class RegisterRequest(
     val height: Double? = null,
 
     @SerializedName("weight")
-    val weight: Double? = null,
-
-    @SerializedName("deviceToken")
-    val deviceToken: String? = null
+    val weight: Double? = null
 )

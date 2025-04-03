@@ -1,3 +1,4 @@
+// --- START OF (MODIFIED) diagnow/core/network/RetrofitHelper.kt ---
 package com.example.diagnow.core.network
 
 import com.example.diagnow.core.session.SessionManager
@@ -13,34 +14,38 @@ import java.util.concurrent.TimeUnit
 
 class RetrofitHelper(private val sessionManager: SessionManager) {
     companion object {
-        private const val BASE_URL = "http://10.0.2.2:8000/api/" // Cambiar por la URL real de la API
+        // --- ASEGÚRATE QUE ESTA ES TU BASE URL CORRECTA ---
+        // Si tus endpoints empiezan con /api, inclúyelo aquí.
+        private const val BASE_URL = "https://diagnow-api.onrender.com"
         private const val TIMEOUT = 30L
     }
 
-    // Interceptor para agregar el token de autenticación
+    // Interceptor para agregar el token de autenticación (¡Este es CLAVE!)
     private val authInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()
+        // Obtiene el token guardado por SessionManager DESPUÉS del login
         val token = sessionManager.getToken()
 
-        val newRequest = if (token != null) {
+        val newRequest = if (token != null && !originalRequest.url.encodedPath.contains("login") && !originalRequest.url.encodedPath.contains("register")) {
+            // Añade el header solo si hay token y NO es para login/register
             originalRequest.newBuilder()
                 .header("Authorization", "Bearer $token")
                 .build()
         } else {
-            originalRequest
+            originalRequest // No añade header para login/register o si no hay token
         }
 
         chain.proceed(newRequest)
     }
 
-    // Interceptor para logging (útil para debugging)
+    // Interceptor para logging
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
+        level = HttpLoggingInterceptor.Level.BODY // Cambia a NONE para producción
     }
 
     // Cliente OkHttp con configuración
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(authInterceptor)
+        .addInterceptor(authInterceptor) // Se aplica a TODAS las llamadas
         .addInterceptor(loggingInterceptor)
         .connectTimeout(TIMEOUT, TimeUnit.SECONDS)
         .readTimeout(TIMEOUT, TimeUnit.SECONDS)
@@ -68,4 +73,10 @@ class RetrofitHelper(private val sessionManager: SessionManager) {
     val prescriptionService: PrescriptionService by lazy {
         retrofit.create(PrescriptionService::class.java)
     }
+
+    // --- NUEVO SERVICIO ---
+    val deviceTokenService: DeviceTokenService by lazy {
+        retrofit.create(DeviceTokenService::class.java)
+    }
+    // --- FIN NUEVO SERVICIO ---
 }

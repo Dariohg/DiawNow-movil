@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "737243682981",
+    "project_id": "diagnow-da122",
+    "storage_bucket": "diagnow-da122.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:737243682981:android:62c975f9620a8d7e40d54c",
+        "android_client_info": {
+          "package_name": "com.example.diagnow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDFIFLjwwORkSHVea7_EAbIku5mEijVXDE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

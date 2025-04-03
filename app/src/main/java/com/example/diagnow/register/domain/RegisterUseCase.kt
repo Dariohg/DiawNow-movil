@@ -13,9 +13,8 @@ class RegisterUseCase(private val registerRepository: RegisterRepository) {
         confirmPassword: String,
         age: Int,
         height: Double? = null,
-        weight: Double? = null,
-        deviceToken: String? = null
-    ): Result<User> {
+        weight: Double? = null
+    ): Result<String> {
         // Validaciones
         if (name.isBlank()) {
             return Result.failure(Exception("El nombre es obligatorio"))
@@ -56,8 +55,7 @@ class RegisterUseCase(private val registerRepository: RegisterRepository) {
             password = password,
             age = age,
             height = height,
-            weight = weight,
-            deviceToken = deviceToken
+            weight = weight
         )
     }
 }

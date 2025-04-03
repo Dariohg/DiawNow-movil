@@ -7,8 +7,5 @@ data class LoginRequest(
     val email: String,
 
     @SerializedName("password")
-    val password: String,
-
-    @SerializedName("deviceToken")
-    val deviceToken: String? = null
+    val password: String
 )

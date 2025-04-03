@@ -83,8 +83,7 @@ class RegisterViewModel(private val registerUseCase: RegisterUseCase) : ViewMode
                     confirmPassword = _uiState.value.confirmPassword,
                     age = age,
                     height = height,
-                    weight = weight,
-                    deviceToken = deviceToken
+                    weight = weight
                 )
 
                 result.fold(

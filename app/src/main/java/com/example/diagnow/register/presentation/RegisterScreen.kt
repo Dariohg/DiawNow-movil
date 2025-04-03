@@ -62,7 +62,7 @@ import com.example.diagnow.register.domain.RegisterUseCase
 @Composable
 fun RegisterScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToHome: () -> Unit
+    onNavigateToLogin: () -> Unit
 ) {
     // En una aplicación real, estos se inyectarían
     val context = LocalContext.current
@@ -94,7 +94,7 @@ fun RegisterScreen(
     // Efecto para navegar al home cuando el usuario está registrado
     LaunchedEffect(uiState.isRegistered) {
         if (uiState.isRegistered) {
-            onNavigateToHome()
+            onNavigateToLogin()
         }
     }
 

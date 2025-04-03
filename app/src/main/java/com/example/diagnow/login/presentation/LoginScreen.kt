@@ -45,6 +45,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.diagnow.core.fcm.data.DeviceTokenRepository
+import com.example.diagnow.core.fcm.domain.RegisterDeviceTokenUseCase
 import com.example.diagnow.core.network.RetrofitHelper
 import com.example.diagnow.core.session.SessionManager
 import com.example.diagnow.login.data.repository.LoginRepository
@@ -55,10 +57,26 @@ fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     onNavigateToHome: () -> Unit
 ) {
-    // En una aplicación real, estos se inyectarían
     val context = LocalContext.current
+    // --- 1. Instanciar Dependencias Base ---
     val sessionManager = remember { SessionManager(context) }
-    val viewModel = remember { LoginViewModel(LoginUseCase(LoginRepository(RetrofitHelper(sessionManager), sessionManager))) }
+    val retrofitHelper = remember { RetrofitHelper(sessionManager) }
+
+    // --- 2. Instanciar Dependencias de Login ---
+    val loginRepository = remember { LoginRepository(retrofitHelper, sessionManager) }
+    val loginUseCase = remember { LoginUseCase(loginRepository) }
+
+    // --- 3. Instanciar Dependencias de Device Token ---
+    val deviceTokenRepository = remember { DeviceTokenRepository(retrofitHelper, sessionManager) }
+    val registerDeviceTokenUseCase = remember { RegisterDeviceTokenUseCase(deviceTokenRepository) }
+
+    // --- 4. Instanciar ViewModel con TODAS sus dependencias ---
+    val viewModel = remember {
+        LoginViewModel(
+            loginUseCase = loginUseCase,
+            registerDeviceTokenUseCase = registerDeviceTokenUseCase // <--- Pasar la nueva dependencia
+        )
+    }
 
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

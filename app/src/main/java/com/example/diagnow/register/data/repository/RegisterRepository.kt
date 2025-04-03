@@ -18,7 +18,7 @@ class RegisterRepository(
         height: Double? = null,
         weight: Double? = null,
         deviceToken: String? = null
-    ): Result<User> {
+    ): Result<String> {
         return try {
             val request = RegisterRequest(
                 name = name,
@@ -27,8 +27,7 @@ class RegisterRepository(
                 password = password,
                 age = age,
                 height = height,
-                weight = weight,
-                deviceToken = deviceToken
+                weight = weight
             )
 
             val response = retrofitHelper.registerService.register(request)
@@ -36,9 +35,7 @@ class RegisterRepository(
             if (response.isSuccessful) {
                 response.body()?.let { registerResponse ->
                     // Guardar token y datos del usuario
-                    sessionManager.setToken(registerResponse.token)
-                    sessionManager.setUser(registerResponse.user)
-                    Result.success(registerResponse.user)
+                    Result.success(registerResponse.status)
                 } ?: Result.failure(Exception("Respuesta vacía del servidor"))
             } else {
                 Result.failure(Exception(response.errorBody()?.string() ?: "Error desconocido"))

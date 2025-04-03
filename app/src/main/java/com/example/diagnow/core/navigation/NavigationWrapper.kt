@@ -36,8 +36,8 @@ fun NavigationWrapper(
         composable(Screen.Register.route) {
             RegisterScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToHome = {
-                    navController.navigate(Screen.Home.route) {
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Register.route) { inclusive = true }
                     }
                 }
