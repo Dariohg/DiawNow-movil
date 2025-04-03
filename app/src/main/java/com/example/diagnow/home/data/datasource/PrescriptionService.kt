@@ -1,5 +1,6 @@
 package com.example.diagnow.home.data.datasource
 
+import com.example.diagnow.home.data.model.PrescriptionDetailResponse
 import com.example.diagnow.home.data.model.PrescriptionListResponse
 import com.example.diagnow.home.data.model.PrescriptionResponse
 import retrofit2.Response
@@ -24,4 +25,10 @@ interface PrescriptionService {
         @Header("Authorization") token: String,
         @Path("patientId") patientId: String
     ): Response<PrescriptionListResponse>
+
+    @GET("medications/prescription/{prescriptionId}")
+    suspend fun getPrescriptionMedications(
+        @Header("Authorization") token: String,
+        @Path("prescriptionId") prescriptionId: String
+    ): Response<PrescriptionDetailResponse>
 }

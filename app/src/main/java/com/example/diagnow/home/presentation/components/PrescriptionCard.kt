@@ -22,7 +22,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -87,7 +86,8 @@ fun PrescriptionCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = (prescription.status ?: "activa").replaceFirstChar { it.uppercase() },                        style = MaterialTheme.typography.bodyMedium,
+                        text = (prescription.status ?: "activa").replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -139,39 +139,23 @@ fun PrescriptionCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Date and medication count
+            // Date
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Date
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.CalendarMonth,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = formattedDate,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // Medication count
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = MaterialTheme.shapes.small
-                ) {
-                    Text(
-                        "${prescription.medications?.size ?: 0} medicamento${if ((prescription.medications?.size ?: 0) > 1) "s" else ""}",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
+                Icon(
+                    Icons.Default.CalendarMonth,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = formattedDate,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

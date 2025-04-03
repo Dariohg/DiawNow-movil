@@ -48,7 +48,7 @@ import com.example.diagnow.home.presentation.components.PrescriptionCard
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onPrescriptionClick: (String) -> Unit,
+    onPrescriptionClick: (String, String) -> Unit,
     onLogout: () -> Unit
 ) {
     // En una aplicación real, estos se inyectarían
@@ -75,6 +75,8 @@ fun HomeScreen(
             snackbarHostState.showSnackbar(it)
         }
     }
+
+
 
     Scaffold(
         topBar = {
@@ -176,7 +178,9 @@ fun HomeScreen(
                         items(uiState.prescriptions) { prescription ->
                             PrescriptionCard(
                                 prescription = prescription,
-                                onClick = { onPrescriptionClick(prescription.id) }
+                                onClick = {
+                                    onPrescriptionClick(prescription.id, prescription.diagnosis)
+                                }
                             )
                         }
                     }

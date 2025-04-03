@@ -9,8 +9,8 @@ sealed class Screen(val route: String) {
     // Pantalla principal
     object Home : Screen("home")
 
-    // Detalle de receta
-    object PrescriptionDetail : Screen("prescription/{prescriptionId}") {
-        fun createRoute(prescriptionId: String) = "prescription/$prescriptionId"
+    object PrescriptionDetail : Screen("prescription/{prescriptionId}/{diagnosis}") {
+        fun createRoute(prescriptionId: String, diagnosis: String) =
+            "prescription/$prescriptionId/$diagnosis"
     }
 }
