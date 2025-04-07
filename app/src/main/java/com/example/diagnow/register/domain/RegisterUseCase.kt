@@ -1,6 +1,5 @@
 package com.example.diagnow.register.domain
 
-import com.example.diagnow.core.model.User
 import com.example.diagnow.register.data.repository.RegisterRepository
 
 class RegisterUseCase(private val registerRepository: RegisterRepository) {
@@ -15,7 +14,6 @@ class RegisterUseCase(private val registerRepository: RegisterRepository) {
         height: Double? = null,
         weight: Double? = null
     ): Result<String> {
-        // Validaciones
         if (name.isBlank()) {
             return Result.failure(Exception("El nombre es obligatorio"))
         }

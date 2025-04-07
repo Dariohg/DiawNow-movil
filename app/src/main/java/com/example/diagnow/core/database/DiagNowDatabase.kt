@@ -1,6 +1,7 @@
 package com.example.diagnow.core.database
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -13,7 +14,7 @@ import com.example.diagnow.core.database.entity.PrescriptionEntity
 
 @Database(
     entities = [PrescriptionEntity::class, MedicationEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)
@@ -42,5 +43,14 @@ abstract class DiagNowDatabase : RoomDatabase() {
                 instance
             }
         }
+    }
+
+    suspend fun clearAllData() {
+        // Es importante ejecutar esto en un contexto IO adecuado
+        // Quien llame a esta función debe asegurarse de eso (ej. viewModelScope.launch(Dispatchers.IO))
+        Log.w("DiagNowDatabase", "Clearing all data from database...")
+        prescriptionDao().clearPrescriptions()
+        medicationDao().clearMedications()
+        Log.i("DiagNowDatabase", "Database cleared.")
     }
 }

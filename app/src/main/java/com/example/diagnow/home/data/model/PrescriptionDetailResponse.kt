@@ -48,5 +48,8 @@ data class MedicationDetailResponse(
     val instructions: String? = null,
 
     @SerializedName("createdAt")
-    val createdAt: Date? = null
+    val createdAt: Date? = null,
+
+    val treatmentStatus: String,
+    val treatmentStartDate: Date?
 )

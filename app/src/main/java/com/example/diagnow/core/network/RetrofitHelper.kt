@@ -14,9 +14,7 @@ import java.util.concurrent.TimeUnit
 
 class RetrofitHelper(private val sessionManager: SessionManager) {
     companion object {
-        // --- ASEGÚRATE QUE ESTA ES TU BASE URL CORRECTA ---
-        // Si tus endpoints empiezan con /api, inclúyelo aquí.
-        private const val BASE_URL = "https://diagnow-api.onrender.com"
+        private const val BASE_URL = "http://54.172.229.231:8080"
         private const val TIMEOUT = 30L
     }
 

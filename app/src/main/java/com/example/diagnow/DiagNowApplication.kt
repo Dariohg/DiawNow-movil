@@ -6,10 +6,20 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import com.example.diagnow.core.database.DiagNowDatabase
+import androidx.lifecycle.ViewModelProvider
+import com.example.diagnow.core.database.dao.MedicationDao
+import com.example.diagnow.core.database.dao.PrescriptionDao
+import com.example.diagnow.core.database.repository.LocalDataRepository
+
 
 class DiagNowApplication : Application() {
 
     val database: DiagNowDatabase by lazy { DiagNowDatabase.getInstance(this) }
+    private val prescriptionDao: PrescriptionDao by lazy { database.prescriptionDao() }
+    private val medicationDao: MedicationDao by lazy { database.medicationDao() }
+    val localDataRepository: LocalDataRepository by lazy {
+        LocalDataRepository(database, prescriptionDao, medicationDao) // Pasar database primero
+    }
 
     companion object {
         const val CHANNEL_ID = "diagnow_notifications"

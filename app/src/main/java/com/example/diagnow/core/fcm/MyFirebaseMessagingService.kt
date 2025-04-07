@@ -137,7 +137,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             val database = (application as DiagNowApplication).database
             val prescriptionDao = database.prescriptionDao()
             val medicationDao = database.medicationDao()
-            val localRepository = LocalDataRepository(prescriptionDao, medicationDao)
+            val localRepository = LocalDataRepository(database, prescriptionDao, medicationDao)
 
             val retrofitHelper = RetrofitHelper(sessionManager)
             val remoteRepository = PrescriptionRepository(retrofitHelper, sessionManager)

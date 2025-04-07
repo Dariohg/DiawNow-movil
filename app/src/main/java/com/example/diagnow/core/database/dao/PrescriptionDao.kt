@@ -27,4 +27,7 @@ interface PrescriptionDao {
 
     @Query("DELETE FROM prescriptions WHERE id = :prescriptionId")
     suspend fun deletePrescription(prescriptionId: String)
+
+    @Query("DELETE FROM prescriptions")
+    suspend fun clearPrescriptions()
 }

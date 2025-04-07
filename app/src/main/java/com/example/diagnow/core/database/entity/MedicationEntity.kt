@@ -8,6 +8,12 @@ import androidx.room.TypeConverters
 import com.example.diagnow.core.database.converters.DateConverter
 import java.util.Date
 
+object TreatmentStatus {
+    const val NOT_STARTED = "NOT_STARTED"
+    const val ACTIVE = "ACTIVE"
+    const val COMPLETED = "COMPLETED"
+}
+
 @Entity(
     tableName = "medications",
     foreignKeys = [
@@ -15,7 +21,7 @@ import java.util.Date
             entity = PrescriptionEntity::class,
             parentColumns = ["id"],
             childColumns = ["prescriptionId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.NO_ACTION
         )
     ],
     indices = [Index("prescriptionId")]
@@ -32,5 +38,7 @@ data class MedicationEntity(
     val administrationRoute: String?,
     val instructions: String?,
     val createdAt: Date?,
-    val lastUpdated: Long = System.currentTimeMillis()
+    val lastUpdated: Long = System.currentTimeMillis(),
+    val treatmentStatus: String = TreatmentStatus.NOT_STARTED,
+    val treatmentStartDate: Date? = null
 )
