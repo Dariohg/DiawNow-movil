@@ -10,8 +10,8 @@ import com.example.diagnow.core.database.entity.MedicationEntity
 import com.example.diagnow.core.database.entity.TreatmentStatus
 import com.example.diagnow.home.data.model.MedicationDetailResponse
 import com.example.diagnow.home.data.model.PrescriptionResponse
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first // Importar first para leer dentro de saveMedications
 import java.util.Date
 import java.util.NoSuchElementException
 
@@ -21,18 +21,40 @@ class LocalDataRepository(
     private val medicationDao: MedicationDao
 ) {
 
-    // --- Prescripciones ---
-    fun getAllPrescriptions(): Flow<List<PrescriptionEntity>> { return prescriptionDao.getAllPrescriptions() }
-    suspend fun getPrescriptionById(prescriptionId: String): PrescriptionEntity? { return prescriptionDao.getPrescriptionById(prescriptionId) }
+    // --- Métodos de Prescripción ---
+
+    fun getAllPrescriptions(): Flow<List<PrescriptionEntity>> {
+        return prescriptionDao.getAllPrescriptions()
+    }
+
+    suspend fun getPrescriptionById(prescriptionId: String): PrescriptionEntity? {
+        return prescriptionDao.getPrescriptionById(prescriptionId)
+    }
+
     suspend fun savePrescription(prescription: PrescriptionResponse) {
-        val prescriptionEntity = PrescriptionEntity( id = prescription.id, patientId = prescription.patientId, doctorName = prescription.doctorName, date = prescription.date, diagnosis = prescription.diagnosis, status = prescription.status, notes = prescription.notes, createdAt = prescription.createdAt )
-        prescriptionDao.insertPrescription(prescriptionEntity)
+        val existing = prescriptionDao.getPrescriptionById(prescription.id)
+        val entity = PrescriptionEntity(
+            id = prescription.id,
+            patientId = prescription.patientId,
+            doctorName = prescription.doctorName,
+            date = prescription.date,
+            diagnosis = prescription.diagnosis,
+            status = prescription.status,
+            notes = prescription.notes,
+            createdAt = prescription.createdAt,
+            isSynchronized = existing?.isSynchronized ?: true,
+            lastUpdated = System.currentTimeMillis()
+        )
+        prescriptionDao.insertPrescription(entity) // REPLACE maneja insert/update
     }
+
     suspend fun savePrescriptions(prescriptions: List<PrescriptionResponse>) {
+        Log.d("LocalDataRepository", "Upserting ${prescriptions.size} prescriptions individually.")
         if (prescriptions.isEmpty()) return
-        val entities = prescriptions.map { p -> PrescriptionEntity( id = p.id, patientId = p.patientId, doctorName = p.doctorName, date = p.date, diagnosis = p.diagnosis, status = p.status, notes = p.notes, createdAt = p.createdAt ) }
-        prescriptionDao.insertAllPrescriptions(entities)
+        prescriptions.forEach { savePrescription(it) }
+        Log.i("LocalDataRepository", "Finished upserting prescriptions.")
     }
+
     suspend fun deletePrescriptionWithMedications(prescriptionId: String) {
         Log.w("LocalDataRepository", "Deleting prescription and medications for ID: $prescriptionId")
         database.withTransaction {
@@ -41,90 +63,110 @@ class LocalDataRepository(
         }
     }
 
-    // --- Medicamentos ---
+    // --- Métodos de Medicamentos ---
 
-//    fun getLocalMedicationsFlow(prescriptionId: String): Flow<List<MedicationEntity>> {
-//        return medicationDao.getMedicationsByPrescriptionIdFlow(prescriptionId) // Usa Flow DAO
-//    }
-
-    suspend fun getLocalMedicationsList(prescriptionId: String): List<MedicationEntity> {
-        Log.d("LocalDataRepository", ">>> ENTERING getLocalMedicationsList for prescription: $prescriptionId")
-        val result = try {
-            delay(150)
-            medicationDao.getMedicationsByPrescriptionIdList(prescriptionId) // Usa Suspend DAO
-        } catch (e: Exception){
-            Log.e("LocalDataRepository", ">>> ERROR in getLocalMedicationsList calling DAO", e)
-            emptyList<MedicationEntity>()
-        }
-        Log.d("LocalDataRepository", "<<< EXITING getLocalMedicationsList for prescription: $prescriptionId - Count: ${result.size}")
-        return result
+    /**
+     * Obtiene un Flow de la lista de medicamentos para observación reactiva.
+     * Llama a 'getMedicationsByPrescriptionIdFlow' del DAO.
+     */
+    fun getLocalMedicationsFlow(prescriptionId: String): Flow<List<MedicationEntity>> {
+        return medicationDao.getMedicationsByPrescriptionIdFlow(prescriptionId)
     }
 
+    // YA NO NECESITAMOS getLocalMedicationsList (suspend) porque leemos con .first() del Flow
+
+    /**
+     * Obtiene un medicamento específico por su ID.
+     */
     suspend fun getMedicationById(medicationId: String): MedicationEntity? {
         return medicationDao.getMedicationById(medicationId)
     }
 
     /**
-     * Sincroniza: Guarda solo nuevos remotos, ignora existentes, borra obsoletos locales.
+     * Sincroniza medicamentos: Guarda solo nuevos y borra obsoletos. Ignora existentes.
+     * Lee el estado local usando .first() en el Flow DENTRO de la transacción.
      */
     suspend fun saveMedications(remoteMedications: List<MedicationDetailResponse>, prescriptionId: String) {
-        Log.d("LocalDataRepository", "[IGNORE-SAFE] Syncing meds for prescription $prescriptionId. Remote count: ${remoteMedications.size}")
+        Log.d("LocalDataRepository", "[IGNORE-FLOW] Syncing meds for prescription $prescriptionId. Remote count: ${remoteMedications.size}")
+
         try {
-            // 1. Obtener locales ANTES de la transacción
-            val initialLocalMedsMap = try {
-                delay(150)
-                getLocalMedicationsList(prescriptionId).associateBy { it.id }
-            } catch (e: Exception) {
-                Log.e("LocalDataRepository", "[IGNORE-SAFE] Error fetching initial local meds for $prescriptionId", e)
-                emptyMap<String, MedicationEntity>()
-            }
-            val localMedIds = initialLocalMedsMap.keys
-            Log.d("LocalDataRepository", "[IGNORE-SAFE] Fetched ${initialLocalMedsMap.size} initial local meds BEFORE transaction. MAP: $initialLocalMedsMap")
+            database.withTransaction {
+                Log.d("LocalDataRepository", "[IGNORE-FLOW-TX] Transaction started for $prescriptionId.")
 
-            // 2. IDs remotos
-            val remoteMedMap = remoteMedications.associateBy { it.id }
-            val remoteMedIds = remoteMedMap.keys
-
-            // 3. Diferencias
-            val newMedIds = remoteMedIds - localMedIds
-            val obsoleteMedIds = localMedIds - remoteMedIds
-            val existingIgnoredIds = remoteMedIds intersect localMedIds
-
-            Log.d("LocalDataRepository", "[IGNORE-SAFE] Sync details: New=${newMedIds.size}, Existing/Ignored=${existingIgnoredIds.size}, Obsolete=${obsoleteMedIds.size}")
-
-            // 4. Transacción si hay cambios
-            if ((newMedIds.isNotEmpty() || obsoleteMedIds.isNotEmpty()) && localMedIds.isEmpty()) {
-                database.withTransaction {
-                    // Borrar Obsoletos
-//                    if (obsoleteMedIds.isNotEmpty()) {
-//                        obsoleteMedIds.forEach { medId -> medicationDao.deleteMedicationById(medId) }
-//                        Log.w("LocalDataRepository", "[IGNORE-SAFE-TX] Deleted ${obsoleteMedIds.size} obsolete medications.")
-//                    }
-                    // Insertar Nuevos
-                    if (newMedIds.isNotEmpty()) {
-                        val newEntities = newMedIds.mapNotNull { remoteMedMap[it] }
-                            .map { remoteMed ->
-                                MedicationEntity(
-                                    id = remoteMed.id, prescriptionId = prescriptionId, name = remoteMed.name, dosage = remoteMed.dosage,
-                                    frequency = remoteMed.frequency, days = remoteMed.days, administrationRoute = remoteMed.administrationRoute,
-                                    instructions = remoteMed.instructions, createdAt = remoteMed.createdAt,
-                                    treatmentStatus = TreatmentStatus.NOT_STARTED, treatmentStartDate = null,
-                                    lastUpdated = System.currentTimeMillis()
-                                )
-                            }
-                        if (newEntities.isNotEmpty()) { medicationDao.insertAllMedications(newEntities) }
-                        Log.i("LocalDataRepository", "[IGNORE-SAFE-TX] Inserted ${newEntities.size} new medications.")
-                    }
-                    Log.d("LocalDataRepository", "[IGNORE-SAFE-TX] Transaction finished.")
+                // 1. Obtener locales DENTRO de la transacción usando .first()
+                val localMedsMap: Map<String, MedicationEntity> = try {
+                    medicationDao.getMedicationsByPrescriptionIdFlow(prescriptionId).first() // <-- Leer Flow aquí
+                        .associateBy { it.id }
+                } catch (e: NoSuchElementException) {
+                    Log.d("LocalDataRepository", "[IGNORE-FLOW-TX] No existing local meds (Flow empty) for $prescriptionId")
+                    emptyMap()
+                } catch (e: Exception) {
+                    Log.e("LocalDataRepository", "[IGNORE-FLOW-TX] Error getting local meds in transaction", e)
+                    emptyMap()
                 }
-            } else {
-                Log.d("LocalDataRepository", "[IGNORE-SAFE] No changes needed. Skipping transaction.")
-            }
+                val localMedIds = localMedsMap.keys
+                Log.d("LocalDataRepository", "[IGNORE-FLOW-TX] Fetched ${localMedsMap.size} local meds IN transaction. MAP: $localMedsMap")
+
+                // 2. IDs remotos
+                val remoteMedMap = remoteMedications.associateBy { it.id }
+                val remoteMedIds = remoteMedMap.keys
+
+                // 3. Diferencias
+                val newMedIds = remoteMedIds - localMedIds
+                val obsoleteMedIds = localMedIds - remoteMedIds
+                val existingIgnoredIds = remoteMedIds intersect localMedIds
+
+                Log.d("LocalDataRepository", "[IGNORE-FLOW-TX] Sync details: New=${newMedIds.size}, Existing/Ignored=${existingIgnoredIds.size}, Obsolete=${obsoleteMedIds.size}")
+
+                // 4. Borrar Obsoletos
+                if (obsoleteMedIds.isNotEmpty()) {
+                    Log.w("LocalDataRepository", "[IGNORE-FLOW-TX] Deleting ${obsoleteMedIds.size} obsolete medications.")
+                    obsoleteMedIds.forEach { medId ->
+                        val rowsDeleted = medicationDao.deleteMedicationById(medId)
+                        if (rowsDeleted <= 0) Log.w("LocalDataRepository", "[IGNORE-FLOW-TX] Failed to delete obsolete med: $medId")
+                    }
+                }
+
+                // 5. Insertar Nuevos
+                if (newMedIds.isNotEmpty()) {
+                    Log.i("LocalDataRepository", "[IGNORE-FLOW-TX] Inserting ${newMedIds.size} new medications.")
+                    val newEntities = newMedIds.mapNotNull { remoteMedMap[it] }
+                        .map { remoteMed ->
+                            // *** MAPEO COMPLETO AQUÍ ***
+                            MedicationEntity(
+                                id = remoteMed.id,
+                                prescriptionId = prescriptionId,
+                                name = remoteMed.name,
+                                dosage = remoteMed.dosage,
+                                frequency = remoteMed.frequency,
+                                days = remoteMed.days,
+                                administrationRoute = remoteMed.administrationRoute,
+                                instructions = remoteMed.instructions,
+                                createdAt = remoteMed.createdAt,
+                                treatmentStatus = TreatmentStatus.NOT_STARTED, // Default para nuevos
+                                treatmentStartDate = null,                     // Default para nuevos
+                                lastUpdated = System.currentTimeMillis()
+                            )
+                            // *** FIN MAPEO COMPLETO ***
+                        }
+                    if (newEntities.isNotEmpty()) {
+                        medicationDao.insertAllMedications(newEntities)
+                    }
+                }
+
+                // 6. Log Ignorados
+                if(existingIgnoredIds.isNotEmpty()){
+                    Log.d("LocalDataRepository", "[IGNORE-FLOW-TX] Ignored update for existing med IDs: $existingIgnoredIds")
+                }
+
+                Log.d("LocalDataRepository", "[IGNORE-FLOW-TX] Transaction finished.")
+            } // FIN TRANSACCIÓN
         } catch (e: Exception) {
-            Log.e("LocalDataRepository", "[IGNORE-SAFE] Error during medication sync transaction for prescription $prescriptionId", e)
+            Log.e("LocalDataRepository", "[IGNORE-FLOW] Error during medication sync transaction for prescription $prescriptionId", e)
             throw e
         }
     }
+
 
     suspend fun updateMedicationTreatmentStatus( medicationId: String, newStatus: String, startDate: Date? = null ): Result<Unit> {
         Log.d("LocalDataRepository", "Updating treatment status for $medicationId to $newStatus")

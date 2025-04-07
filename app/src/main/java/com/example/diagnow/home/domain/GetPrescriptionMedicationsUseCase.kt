@@ -1,34 +1,38 @@
 package com.example.diagnow.home.domain
 
 import android.util.Log
+import com.example.diagnow.core.database.entity.MedicationEntity // Necesario para el tipo de Flow
 import com.example.diagnow.core.database.repository.LocalDataRepository
+import com.example.diagnow.home.data.model.PrescriptionDetailResponse
 import com.example.diagnow.home.data.repository.PrescriptionRepository
+import kotlinx.coroutines.flow.Flow // Necesario para el tipo de retorno
 
 class GetPrescriptionMedicationsUseCase(
     private val remoteRepository: PrescriptionRepository,
     private val localRepository: LocalDataRepository
 ) {
     /**
-     * Intenta obtener los medicamentos desde la fuente remota (API) y los sincroniza
-     * con la base de datos local usando la lógica "Ignorar Existentes" del LocalDataRepository.
+     * Intenta obtener medicamentos de la API y sincronizarlos localmente.
      */
     suspend fun fetchAndSyncRemoteMedications(prescriptionId: String): Result<Unit> {
-        Log.d("GetMedsUseCase", "[SUSPEND-IGNORE] Attempting fetch and sync for prescription: $prescriptionId")
+        Log.d("GetMedsUseCase", "[FLOW-ONLY] Attempting fetch and sync for prescription: $prescriptionId")
         val remoteResult = remoteRepository.getPrescriptionMedications(prescriptionId)
-
         return if (remoteResult.isSuccess) {
-            val response = remoteResult.getOrNull()
             try {
-                localRepository.saveMedications(response?.data?.medications ?: emptyList(), prescriptionId)
-                Log.i("GetMedsUseCase", "[SUSPEND-IGNORE] Sync completed successfully for prescription: $prescriptionId")
+                localRepository.saveMedications(remoteResult.getOrNull()?.data?.medications ?: emptyList(), prescriptionId)
+                Log.i("GetMedsUseCase", "[FLOW-ONLY] Sync completed successfully for prescription: $prescriptionId")
                 Result.success(Unit)
-            } catch (e: Exception) {
-                Log.e("GetMedsUseCase", "[SUSPEND-IGNORE] Error during local save/sync for prescription $prescriptionId", e)
-                Result.failure(e)
-            }
+            } catch (e: Exception) { Result.failure(e) }
         } else {
-            Log.w("GetMedsUseCase", "[SUSPEND-IGNORE] Remote fetch failed for prescription $prescriptionId: ${remoteResult.exceptionOrNull()?.message}")
-            Result.failure(remoteResult.exceptionOrNull() ?: Exception("Unknown error fetching remote medications"))
+            Result.failure(remoteResult.exceptionOrNull() ?: Exception("Unknown remote error"))
         }
+    }
+
+    /**
+     * Proporciona un Flow de la lista de medicamentos locales.
+     */
+    fun getLocalMedicationsFlow(prescriptionId: String): Flow<List<MedicationEntity>> {
+        Log.d("GetMedsUseCase", "[FLOW-ONLY] Providing Flow of local medications for prescription: $prescriptionId")
+        return localRepository.getLocalMedicationsFlow(prescriptionId) // Llama al método Flow del repo
     }
 }
