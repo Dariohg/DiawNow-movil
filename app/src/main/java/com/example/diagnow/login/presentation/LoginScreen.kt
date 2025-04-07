@@ -58,23 +58,19 @@ fun LoginScreen(
     onNavigateToHome: () -> Unit
 ) {
     val context = LocalContext.current
-    // --- 1. Instanciar Dependencias Base ---
     val sessionManager = remember { SessionManager(context) }
     val retrofitHelper = remember { RetrofitHelper(sessionManager) }
 
-    // --- 2. Instanciar Dependencias de Login ---
     val loginRepository = remember { LoginRepository(retrofitHelper, sessionManager) }
     val loginUseCase = remember { LoginUseCase(loginRepository) }
 
-    // --- 3. Instanciar Dependencias de Device Token ---
     val deviceTokenRepository = remember { DeviceTokenRepository(retrofitHelper, sessionManager) }
     val registerDeviceTokenUseCase = remember { RegisterDeviceTokenUseCase(deviceTokenRepository) }
 
-    // --- 4. Instanciar ViewModel con TODAS sus dependencias ---
     val viewModel = remember {
         LoginViewModel(
             loginUseCase = loginUseCase,
-            registerDeviceTokenUseCase = registerDeviceTokenUseCase // <--- Pasar la nueva dependencia
+            registerDeviceTokenUseCase = registerDeviceTokenUseCase
         )
     }
 
@@ -82,7 +78,6 @@ fun LoginScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    // Efecto para observar errores y mostrar snackbar
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
             snackbarHostState.showSnackbar(it)
@@ -90,7 +85,6 @@ fun LoginScreen(
         }
     }
 
-    // Efecto para navegar al home cuando el usuario está autenticado
     LaunchedEffect(uiState.isLoggedIn) {
         if (uiState.isLoggedIn) {
             onNavigateToHome()
@@ -105,7 +99,6 @@ fun LoginScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Contenido principal
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -114,7 +107,6 @@ fun LoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Logo y título
                 Text(
                     text = "DiagNow",
                     color = MaterialTheme.colorScheme.primary,
@@ -129,7 +121,6 @@ fun LoginScreen(
                     modifier = Modifier.padding(bottom = 32.dp)
                 )
 
-                // Campo de email
                 OutlinedTextField(
                     value = uiState.email,
                     onValueChange = viewModel::onEmailChanged,
@@ -143,7 +134,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Campo de contraseña
                 OutlinedTextField(
                     value = uiState.password,
                     onValueChange = viewModel::onPasswordChanged,
@@ -165,7 +155,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Botón de login
                 Button(
                     onClick = { viewModel.onLoginClicked() },
                     modifier = Modifier
@@ -185,7 +174,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Link para registro
                 TextButton(
                     onClick = onNavigateToRegister
                 ) {

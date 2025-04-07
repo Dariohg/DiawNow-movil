@@ -1,4 +1,3 @@
-// --- START OF (MODIFIED) diagnow/core/network/RetrofitHelper.kt ---
 package com.example.diagnow.core.network
 
 import com.example.diagnow.core.session.SessionManager
@@ -18,39 +17,33 @@ class RetrofitHelper(private val sessionManager: SessionManager) {
         private const val TIMEOUT = 30L
     }
 
-    // Interceptor para agregar el token de autenticación (¡Este es CLAVE!)
     private val authInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()
-        // Obtiene el token guardado por SessionManager DESPUÉS del login
         val token = sessionManager.getToken()
 
         val newRequest = if (token != null && !originalRequest.url.encodedPath.contains("login") && !originalRequest.url.encodedPath.contains("register")) {
-            // Añade el header solo si hay token y NO es para login/register
             originalRequest.newBuilder()
                 .header("Authorization", "Bearer $token")
                 .build()
         } else {
-            originalRequest // No añade header para login/register o si no hay token
+            originalRequest
         }
 
         chain.proceed(newRequest)
     }
 
-    // Interceptor para logging
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY // Cambia a NONE para producción
+        level = HttpLoggingInterceptor.Level.BODY
     }
 
-    // Cliente OkHttp con configuración
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(authInterceptor) // Se aplica a TODAS las llamadas
+        .addInterceptor(authInterceptor)
         .addInterceptor(loggingInterceptor)
         .connectTimeout(TIMEOUT, TimeUnit.SECONDS)
         .readTimeout(TIMEOUT, TimeUnit.SECONDS)
         .writeTimeout(TIMEOUT, TimeUnit.SECONDS)
         .build()
 
-    // Instancia de Retrofit
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
@@ -59,7 +52,6 @@ class RetrofitHelper(private val sessionManager: SessionManager) {
             .build()
     }
 
-    // Servicios de API
     val loginService: LoginService by lazy {
         retrofit.create(LoginService::class.java)
     }
@@ -72,9 +64,7 @@ class RetrofitHelper(private val sessionManager: SessionManager) {
         retrofit.create(PrescriptionService::class.java)
     }
 
-    // --- NUEVO SERVICIO ---
     val deviceTokenService: DeviceTokenService by lazy {
         retrofit.create(DeviceTokenService::class.java)
     }
-    // --- FIN NUEVO SERVICIO ---
 }

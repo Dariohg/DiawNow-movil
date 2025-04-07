@@ -64,7 +64,6 @@ fun RegisterScreen(
     onNavigateBack: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
-    // En una aplicación real, estos se inyectarían
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val viewModel = remember {
@@ -83,7 +82,6 @@ fun RegisterScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
-    // Efecto para observar errores y mostrar snackbar
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
             snackbarHostState.showSnackbar(it)
@@ -91,7 +89,6 @@ fun RegisterScreen(
         }
     }
 
-    // Efecto para navegar al home cuando el usuario está registrado
     LaunchedEffect(uiState.isRegistered) {
         if (uiState.isRegistered) {
             onNavigateToLogin()
@@ -121,7 +118,6 @@ fun RegisterScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Contenido principal
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -137,7 +133,6 @@ fun RegisterScreen(
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
 
-                // Sección de información personal
                 Text(
                     text = "Información Personal",
                     style = MaterialTheme.typography.titleMedium,
@@ -147,7 +142,6 @@ fun RegisterScreen(
                         .padding(vertical = 8.dp)
                 )
 
-                // Nombre y Apellido en la misma fila
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -175,7 +169,6 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Email
                 OutlinedTextField(
                     value = uiState.email,
                     onValueChange = viewModel::onEmailChanged,
@@ -188,7 +181,6 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Edad, Estatura y Peso en la misma fila
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -230,7 +222,6 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Sección de credenciales
                 Text(
                     text = "Credenciales",
                     style = MaterialTheme.typography.titleMedium,
@@ -240,7 +231,6 @@ fun RegisterScreen(
                         .padding(vertical = 8.dp)
                 )
 
-                // Contraseña
                 OutlinedTextField(
                     value = uiState.password,
                     onValueChange = viewModel::onPasswordChanged,
@@ -262,7 +252,6 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Confirmar contraseña
                 OutlinedTextField(
                     value = uiState.confirmPassword,
                     onValueChange = viewModel::onConfirmPasswordChanged,
@@ -284,7 +273,6 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Botón de registro
                 Button(
                     onClick = { viewModel.onRegisterClicked() },
                     modifier = Modifier
@@ -304,7 +292,6 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Link para inicio de sesión
                 TextButton(
                     onClick = onNavigateBack
                 ) {

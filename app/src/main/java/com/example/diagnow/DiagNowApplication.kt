@@ -18,7 +18,7 @@ class DiagNowApplication : Application() {
     private val prescriptionDao: PrescriptionDao by lazy { database.prescriptionDao() }
     private val medicationDao: MedicationDao by lazy { database.medicationDao() }
     val localDataRepository: LocalDataRepository by lazy {
-        LocalDataRepository(database, prescriptionDao, medicationDao) // Pasar database primero
+        LocalDataRepository(database, prescriptionDao, medicationDao)
     }
 
     companion object {
@@ -28,7 +28,6 @@ class DiagNowApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // Crear canal de notificaciones para Android 8.0+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = "DiagNow Notificaciones"
             val descriptionText = "Canal para notificaciones de DiagNow"

@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Esquema de colores para modo oscuro (principal)
 private val DarkColorScheme = darkColorScheme(
     primary = MedicineBlue,
     onPrimary = TextPrimary,
@@ -46,7 +45,6 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun DiagNowTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color no lo usamos para mantener consistencia con la web
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
@@ -55,7 +53,7 @@ fun DiagNowTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicDarkColorScheme(context)
         }
-        else -> DarkColorScheme // Siempre usamos el esquema oscuro
+        else -> DarkColorScheme
     }
 
     val view = LocalView.current

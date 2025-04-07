@@ -70,14 +70,12 @@ fun PrescriptionCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Status indicator and doctor name
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Status indicator dot
                     Box(
                         modifier = Modifier
                             .size(12.dp)
@@ -92,7 +90,6 @@ fun PrescriptionCard(
                     )
                 }
 
-                // Doctor name
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.LocalHospital,
@@ -113,7 +110,6 @@ fun PrescriptionCard(
             Divider()
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Diagnosis
             Row(verticalAlignment = Alignment.Top) {
                 Icon(
                     Icons.Default.Description,
@@ -139,7 +135,6 @@ fun PrescriptionCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Date
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically

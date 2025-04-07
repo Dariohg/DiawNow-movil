@@ -1,6 +1,6 @@
 package com.example.diagnow.home.presentation
 
-import android.app.Application // <-- Importar Application
+import android.app.Application
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,7 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel // <-- Importar viewModel composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.diagnow.DiagNowApplication
 import com.example.diagnow.core.database.entity.TreatmentStatus
 import com.example.diagnow.core.database.repository.LocalDataRepository
@@ -68,7 +68,6 @@ fun PrescriptionDetailScreen(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
-    // --- Dependencias (igual que antes) ---
     val sessionManager = remember { SessionManager(context) }
     val retrofitHelper = remember { RetrofitHelper(sessionManager) }
     val database = remember { (context.applicationContext as DiagNowApplication).database }
@@ -76,13 +75,12 @@ fun PrescriptionDetailScreen(
     val medicationDao = remember { database.medicationDao() }
     val localRepository = remember { LocalDataRepository(database, prescriptionDao, medicationDao) }
 
-    // --- ViewModel con sus dependencias (USANDO LA FACTORY) ---
-    val application = LocalContext.current.applicationContext as Application // Obtener Application
-    val viewModel: PrescriptionDetailViewModel = viewModel( // Usar viewModel() composable
-        key = prescriptionId, // Opcional: clave para recrear si cambia ID
-        factory = PrescriptionDetailViewModelFactory( // Pasar la Factory
+    val application = LocalContext.current.applicationContext as Application
+    val viewModel: PrescriptionDetailViewModel = viewModel(
+        key = prescriptionId,
+        factory = PrescriptionDetailViewModelFactory(
             application = application,
-            getPrescriptionMedicationsUseCase = remember { // Recordar el UseCase
+            getPrescriptionMedicationsUseCase = remember {
                 GetPrescriptionMedicationsUseCase(
                     remoteRepository = PrescriptionRepository(retrofitHelper, sessionManager),
                     localRepository = localRepository
@@ -91,26 +89,21 @@ fun PrescriptionDetailScreen(
             localRepository = localRepository
         )
     )
-    // --- Fin instanciación ViewModel ---
 
-    // --- Carga inicial ---
     LaunchedEffect(prescriptionId) {
         viewModel.loadPrescriptionMedications(prescriptionId)
     }
 
-    // --- Observar estado de la UI ---
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // --- Manejar errores con Snackbar ---
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
             snackbarHostState.showSnackbar(it)
-            viewModel.clearError() // Limpiar el error después de mostrarlo
+            viewModel.clearError()
         }
     }
 
-    // --- Estructura de la pantalla ---
     Scaffold(
         topBar = {
             TopAppBar(
@@ -132,27 +125,24 @@ fun PrescriptionDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues) // Aplicar padding del Scaffold
+                .padding(paddingValues)
         ) {
-            // --- Estado de carga ---
-            if (uiState.isLoading && uiState.medications.isEmpty()) { // Mostrar solo si no hay datos aún
+            if (uiState.isLoading && uiState.medications.isEmpty()) {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .size(50.dp)
                         .align(Alignment.Center)
                 )
             } else {
-                // --- Contenido principal ---
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp) // Padding horizontal general
+                        .padding(horizontal = 16.dp)
                 ) {
-                    // --- Card de Diagnóstico ---
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 16.dp), // Padding superior
+                            .padding(top = 16.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
@@ -173,10 +163,7 @@ fun PrescriptionDetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // --- Sección de Medicamentos ---
-                    // Mostrar sección incluso si se está recargando en segundo plano
                     if (uiState.medications.isEmpty() && !uiState.isLoading) {
-                        // Mensaje si realmente no hay medicamentos después de cargar
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -188,24 +175,20 @@ fun PrescriptionDetailScreen(
                             )
                         }
                     } else {
-                        // Título de la sección
                         Text(
                             text = "Medicamentos",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold
                             ),
-                            modifier = Modifier.padding(vertical = 8.dp) // Espacio vertical para el título
+                            modifier = Modifier.padding(vertical = 8.dp)
                         )
 
-                        // Indicador de carga sutil si se está recargando
                         if (uiState.isLoading) {
                             LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp))
-                            // O puedes usar un pequeño CircularProgressIndicator alineado
                         }
 
-                        // --- Lista de Medicamentos ---
                         LazyColumn(
-                            contentPadding = PaddingValues(bottom = 16.dp) // Padding inferior para la lista
+                            contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
                             items(items = uiState.medications, key = { it.id }) { medication ->
                                 MedicationDetailCard(
@@ -213,18 +196,17 @@ fun PrescriptionDetailScreen(
                                     onStartClick = { viewModel.startTreatment(medication.id) },
                                     onEndClick = { viewModel.endTreatment(medication.id) }
                                 )
-                                Spacer(modifier = Modifier.height(12.dp)) // Espacio entre cards
+                                Spacer(modifier = Modifier.height(12.dp))
                             }
-                        } // Fin LazyColumn
-                    } // Fin else (hay medicamentos o se está cargando)
-                } // Fin Column contenido principal
-            } // Fin else (no está en carga inicial)
-        } // Fin Box principal
-    } // Fin Scaffold
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 
-// --- MedicationDetailCard (sin cambios respecto a la versión anterior) ---
 @Composable
 fun MedicationDetailCard(
     medication: MedicationDetailResponse,
@@ -321,7 +303,6 @@ fun MedicationDetailCard(
     }
 }
 
-// --- MedicationDetailRow (sin cambios respecto a la versión anterior) ---
 @Composable
 fun MedicationDetailRow(label: String, value: String) {
     Row(

@@ -7,7 +7,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 val Typography = Typography(
-    // Títulos
     displayLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
@@ -30,7 +29,6 @@ val Typography = Typography(
         color = TextPrimary
     ),
 
-    // Encabezados
     headlineLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
@@ -53,7 +51,6 @@ val Typography = Typography(
         color = TextPrimary
     ),
 
-    // Títulos
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
@@ -76,7 +73,6 @@ val Typography = Typography(
         color = TextPrimary
     ),
 
-    // Cuerpo
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -99,7 +95,6 @@ val Typography = Typography(
         color = TextSecondary
     ),
 
-    // Etiquetas
     labelLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,

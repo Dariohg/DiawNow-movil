@@ -9,7 +9,6 @@ class RegisterDeviceTokenUseCase(
         if (token.isBlank()) {
             return Result.failure(Exception("No se puede registrar un token FCM vacío"))
         }
-        // Simplemente delega al repositorio
         return repository.registerToken(token)
     }
 }

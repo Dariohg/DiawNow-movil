@@ -26,7 +26,6 @@ abstract class DiagNowDatabase : RoomDatabase() {
     companion object {
         private const val DATABASE_NAME = "diagnow_db"
 
-        // Singleton para prevenir múltiples instancias
         @Volatile
         private var INSTANCE: DiagNowDatabase? = null
 
@@ -37,7 +36,7 @@ abstract class DiagNowDatabase : RoomDatabase() {
                     DiagNowDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .fallbackToDestructiveMigration() // En caso de cambios en el esquema, reinicia la BD
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
@@ -46,8 +45,6 @@ abstract class DiagNowDatabase : RoomDatabase() {
     }
 
     suspend fun clearAllData() {
-        // Es importante ejecutar esto en un contexto IO adecuado
-        // Quien llame a esta función debe asegurarse de eso (ej. viewModelScope.launch(Dispatchers.IO))
         Log.w("DiagNowDatabase", "Clearing all data from database...")
         prescriptionDao().clearPrescriptions()
         medicationDao().clearMedications()

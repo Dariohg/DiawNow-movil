@@ -29,7 +29,7 @@ data class PrescriptionResponse(
     val notes: String? = null,
 
     @SerializedName("createdAt")
-    val createdAt: String? = null // Nuevo campo
+    val createdAt: String? = null
 )
 
 data class MedicationResponse(

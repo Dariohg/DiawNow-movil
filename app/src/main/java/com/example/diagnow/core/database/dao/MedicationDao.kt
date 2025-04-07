@@ -11,15 +11,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MedicationDao {
-    // --- ÚNICA VERSIÓN PARA OBTENER POR PRESCRIPTION ID (DEVUELVE FLOW) ---
     @Query("SELECT * FROM medications WHERE prescriptionId = :prescriptionId")
-    fun getMedicationsByPrescriptionIdFlow(prescriptionId: String): Flow<List<MedicationEntity>> // <-- NOMBRE ESTÁNDAR
+    fun getMedicationsByPrescriptionIdFlow(prescriptionId: String): Flow<List<MedicationEntity>>
 
-    // --- Obtener por ID (Suspend) ---
     @Query("SELECT * FROM medications WHERE id = :medicationId")
     suspend fun getMedicationById(medicationId: String): MedicationEntity?
 
-    // --- Insertar / Actualizar ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMedication(medication: MedicationEntity)
 
@@ -29,7 +26,6 @@ interface MedicationDao {
     @Update
     suspend fun updateMedication(medication: MedicationEntity)
 
-    // --- Borrar ---
     @Query("DELETE FROM medications WHERE prescriptionId = :prescriptionId")
     suspend fun deleteMedicationsByPrescriptionId(prescriptionId: String)
 
@@ -39,7 +35,6 @@ interface MedicationDao {
     @Query("DELETE FROM medications WHERE id = :medicationId")
     suspend fun deleteMedicationById(medicationId: String): Int
 
-    // --- Query para Alarmas / Boot (Sigue siendo suspend) ---
     @Query("SELECT * FROM medications WHERE treatmentStatus = :status")
     suspend fun getAllMedicationsByStatus(status: String = TreatmentStatus.ACTIVE): List<MedicationEntity>
 }

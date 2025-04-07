@@ -6,7 +6,6 @@ import com.example.diagnow.login.data.repository.LoginRepository
 class LoginUseCase(private val loginRepository: LoginRepository) {
 
     suspend operator fun invoke(email: String, password: String, deviceToken: String? = null): Result<String> {
-        // Validaciones básicas
         if (email.isBlank()) {
             return Result.failure(Exception("El correo electrónico es obligatorio"))
         }

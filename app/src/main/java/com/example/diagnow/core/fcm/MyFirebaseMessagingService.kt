@@ -49,7 +49,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     val prescriptionId = remoteMessage.data["prescriptionId"]
                     Log.i(TAG, "Notificación de Nueva Receta recibida, ID: $prescriptionId")
 
-                    // Guardar la receta localmente
                     if (prescriptionId != null) {
                         savePrescriptionLocally(prescriptionId)
                     }
@@ -65,7 +64,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     private fun sendNotification(title: String?, messageBody: String?) {
-        // Intent para abrir la app al hacer clic en la notificación
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
@@ -86,12 +84,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setSound(defaultSoundUri)
             .setContentIntent(pendingIntent)
-            .setVibrate(longArrayOf(0, 500, 200, 500)) // Patrón de vibración: 500ms ON, 200ms OFF, 500ms ON
+            .setVibrate(longArrayOf(0, 500, 200, 500))
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationId = Random.nextInt()
 
-        // Hacer vibrar el dispositivo
         vibrateDevice()
 
         notificationManager.notify(notificationId, notificationBuilder.build())
@@ -100,17 +97,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     private fun vibrateDevice() {
         try {
-            // Obtener el servicio de vibración
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
                 val vibrator = vibratorManager.defaultVibrator
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    // Vibración con efecto predefinido para Android 8.0+
                     vibrator.vibrate(VibrationEffect.createWaveform(
                         longArrayOf(0, 500, 200, 500), -1))
                 } else {
-                    // Método tradicional para versiones anteriores
                     @Suppress("DEPRECATION")
                     vibrator.vibrate(longArrayOf(0, 500, 200, 500), -1)
                 }
@@ -144,15 +138,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    // Obtener detalles de la receta
                     val prescriptionResult = remoteRepository.getPrescriptionById(prescriptionId)
 
                     if (prescriptionResult.isSuccess) {
                         prescriptionResult.getOrNull()?.let { prescription ->
-                            // Guardar la receta localmente
                             localRepository.savePrescription(prescription)
 
-                            // Obtener y guardar los medicamentos
                             val medicationsResult = remoteRepository.getPrescriptionMedications(prescriptionId)
 
                             if (medicationsResult.isSuccess) {

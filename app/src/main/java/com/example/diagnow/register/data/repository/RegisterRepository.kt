@@ -34,7 +34,6 @@ class RegisterRepository(
 
             if (response.isSuccessful) {
                 response.body()?.let { registerResponse ->
-                    // Guardar token y datos del usuario
                     Result.success(registerResponse.status)
                 } ?: Result.failure(Exception("Respuesta vacía del servidor"))
             } else {
